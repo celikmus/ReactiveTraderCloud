@@ -6,6 +6,6 @@ export {
 } from './lastValueObservableDictionary'
 export { default as LastValueObservable } from './lastValueObservable'
 export { default as ServiceClient } from './serviceClient'
-
+export { default as streamify } from './streamify'
 // serviceObservableExtensions has no exports, it adds functionality to rx
 import './serviceObservableExtensions'
