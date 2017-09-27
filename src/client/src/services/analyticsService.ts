@@ -1,5 +1,5 @@
 import { Observable, Scheduler } from 'rxjs/Rx'
-import { ServiceClient } from '../system/service'
+import { streamify } from '../system/service'
 import { PositionsMapper } from './mappers'
 import { Guard, logger, RetryPolicy } from '../system'
 import '../system/observableExtensions/retryPolicyExt'
@@ -11,12 +11,11 @@ export default function analyticsService(
   connection,
   referenceDataService
 ): Object {
-  const serviceClient = new ServiceClient(
-    ServiceConst.AnalyticsServiceKey,
-    connection
-  )
-  const positionsMapper = new PositionsMapper(referenceDataService)
-  serviceClient.connect()
+  const service = {
+    connection,
+    serviceType: ServiceConst.AnalyticsServiceKey
+  }
+  const serviceClient = streamify(service)
   return {
     get serviceStatusStream() {
       return serviceClient.serviceStatusStream
@@ -33,7 +32,9 @@ export default function analyticsService(
             'getAnalytics',
             Scheduler.async
           )
-          .map(dto => positionsMapper.mapFromDto(dto))
+          .map(dto =>
+            PositionsMapper.mapPositionUpdate(referenceDataService, dto)
+          )
           .subscribe(o)
       })
     }

@@ -5,6 +5,6 @@ export interface CurrencyPairPosition {
   basePnl: number
   baseTradedAmount: number
   currencyPair: CurrencyPair
-  basePnlName: 'basePnl'
-  baseTradedAmountName: 'baseTradedAmount'
+  basePnlName: string
+  baseTradedAmountName: string
 }

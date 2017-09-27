@@ -1,51 +1,66 @@
-import * as _ from 'lodash'
-
 import {
   CurrencyPairPosition,
+  CurrencyPairPositionRaw,
   HistoricPosition,
+  HistoricPositionRaw,
   PositionUpdates,
+  PositionUpdatesRaw,
   ReferenceDataService
 } from '../../types'
 
-export default class PositionsMapper {
-  referenceDataService: ReferenceDataService
-
-  constructor(referenceDataService: ReferenceDataService) {
-    this.referenceDataService = referenceDataService
+function mapToTransport(
+  ccyPairPosition: CurrencyPairPosition
+): CurrencyPairPositionRaw {
+  return {
+    Symbol: ccyPairPosition.symbol,
+    BasePnl: ccyPairPosition.basePnl,
+    BaseTradedAmount: ccyPairPosition.baseTradedAmount
   }
+}
 
-  static mapToDto(ccyPairPosition: CurrencyPairPosition) {
+function mapPositionUpdate(
+  referenceDataService: ReferenceDataService,
+  positionData: PositionUpdatesRaw
+): PositionUpdates {
+  const positions = mapCurrentPositions(
+    referenceDataService,
+    positionData.CurrentPositions
+  )
+  const history = mapHistoricPosition(positionData.History)
+  return {
+    history,
+    currentPositions: positions
+  }
+}
+
+function mapCurrentPositions(
+  referenceDataService: ReferenceDataService,
+  currentPositions: CurrencyPairPositionRaw[]
+): CurrencyPairPosition[] {
+  return currentPositions.map(currentPosition => {
     return {
-      symbol: ccyPairPosition.symbol,
-      basePnl: ccyPairPosition.basePnl,
-      baseTradedAmount: ccyPairPosition.baseTradedAmount
-    }
-  }
-
-  mapFromDto(dto: any): PositionUpdates {
-    const positions = this.mapPositionsFromDto(dto.CurrentPositions)
-    const history = this.mapHistoricPositionFromDto(dto.History)
-    return {
-      history,
-      currentPositions: positions
-    }
-  }
-
-  mapPositionsFromDto(dtos: Array<any>): Array<CurrencyPairPosition> {
-    return _.map(dtos, (dto): CurrencyPairPosition => ({
-      symbol: dto.Symbol,
-      basePnl: dto.BasePnl,
-      baseTradedAmount: dto.BaseTradedAmount,
-      currencyPair: this.referenceDataService.getCurrencyPair(dto.Symbol),
+      symbol: currentPosition.Symbol,
+      basePnl: currentPosition.BasePnl,
+      baseTradedAmount: currentPosition.BaseTradedAmount,
+      currencyPair: referenceDataService.getCurrencyPair(
+        currentPosition.Symbol
+      ),
       basePnlName: 'basePnl',
       baseTradedAmountName: 'baseTradedAmount'
-    }))
-  }
+    }
+  })
+}
 
-  mapHistoricPositionFromDto(dtos: Array<any>): Array<HistoricPosition> {
-    return _.map(dtos, (dto): HistoricPosition => ({
-      timestamp: new Date(dto.Timestamp),
-      usdPnl: dto.UsdPnl
-    }))
-  }
+function mapHistoricPosition(
+  historicPositions: HistoricPositionRaw[]
+): HistoricPosition[] {
+  return historicPositions.map(historicPosition => ({
+    timestamp: new Date(historicPosition.Timestamp),
+    usdPnl: historicPosition.UsdPnl
+  }))
+}
+
+export default {
+  mapPositionUpdate,
+  mapToTransport
 }
