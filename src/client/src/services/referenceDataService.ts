@@ -1,4 +1,3 @@
-import * as _ from 'lodash'
 import { Observable, Scheduler, Subscription } from 'rxjs/Rx'
 import { ReferenceDataMapper } from './mappers'
 import { ConnectionStatus, UpdateType, ServiceConst } from '../types'
@@ -17,7 +16,7 @@ export default function referenceDataService(connection): Object {
   const disposables = new Subscription()
   const updateCache = update => {
     const pairUpdates = update.currencyPairUpdates
-    _.forEach(pairUpdates, currencyPairUpdate => {
+    pairUpdates.forEach(currencyPairUpdate => {
       if (currencyPairUpdate.updateType === UpdateType.Added) {
         currencyPairCache[currencyPairUpdate.currencyPair.symbol] =
           currencyPairUpdate.currencyPair
