@@ -247,6 +247,7 @@ export default function streamify(service) {
   }
   return {
     ...service,
+    isConnected,
     createServiceInstanceDictionaryStream,
     createRequestResponseOperation,
     createStreamOperation,

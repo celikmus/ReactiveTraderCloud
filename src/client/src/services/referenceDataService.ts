@@ -3,17 +3,18 @@ import { Observable, Scheduler, Subscription } from 'rxjs/Rx'
 import { ReferenceDataMapper } from './mappers'
 import { ConnectionStatus, UpdateType, ServiceConst } from '../types'
 import { logger, RetryPolicy } from '../system'
-import { ServiceClient } from '../system/service'
+import { streamify } from '../system/service'
 import '../system/observableExtensions/retryPolicyExt'
+
 const log = logger.create('ReferenceDataService')
 
 export default function referenceDataService(connection): Object {
-  const serviceClient = new ServiceClient(
-    ServiceConst.ReferenceServiceKey,
-    connection
-  )
+  const service = {
+    connection,
+    serviceType: ServiceConst.ReferenceServiceKey
+  }
+  const serviceClient = streamify(service)
   const disposables = new Subscription()
-  const referenceDataMapper = new ReferenceDataMapper()
   const updateCache = update => {
     const pairUpdates = update.currencyPairUpdates
     _.forEach(pairUpdates, currencyPairUpdate => {
@@ -28,46 +29,38 @@ export default function referenceDataService(connection): Object {
       currencyPairCache.hasLoaded = true
     }
   }
-  const referenceDataStream = () => {
-    return Observable.create(o => {
-      log.debug('Subscribing reference data stream')
-      return serviceClient
-        .createStreamOperation('getCurrencyPairUpdatesStream', {})
-        .retryWithPolicy(
-          RetryPolicy.backoffTo10SecondsMax,
-          'getCurrencyPairUpdatesStream',
-          Scheduler.async
-        )
-        .map(data => referenceDataMapper.mapCurrencyPairsFromDto(data))
-        .subscribe(
-          updates => {
-            // note : we have a side effect here.
-            // In this instance it's ok as this stream is published and ref counted, i.e. there is only ever 1
-            // and this services is designed to be run at startup and other calls should block until it's loaded.
-            // The intent here is all reference data should be exposed via both a synchronous and push API.
-            // Push only (i.e. Observable only) APIs within applications for data that is effectively already known are a pain to work with.
-            updateCache(updates)
-            o.next(updates)
-          },
-          err => {
-            o.error(err)
-          },
-          () => {
-            o.complete()
-          }
-        )
-    })
-  }
-  const referenceDataStreamConnectable = referenceDataStream().publish()
+
+  const referenceDataStreamConnectable = Observable.create(o => {
+    log.debug('Subscribing reference data stream')
+    return serviceClient
+      .createStreamOperation('getCurrencyPairUpdatesStream', {})
+      .retryWithPolicy(
+        RetryPolicy.backoffTo10SecondsMax,
+        'getCurrencyPairUpdatesStream',
+        Scheduler.async
+      )
+      .map(data => ReferenceDataMapper.mapCurrencyPairs(data))
+      .subscribe(
+        updates => {
+          // note : we have a side effect here.
+          // In this instance it's ok as this stream is published and ref counted, i.e. there is only ever 1
+          // and this services is designed to be run at startup and other calls should block until it's loaded.
+          // The intent here is all reference data should be exposed via both a synchronous and push API.
+          // Push only (i.e. Observable only) APIs within applications for data that is effectively already known are a pain to work with.
+          updateCache(updates)
+          o.next(updates)
+        },
+        err => {
+          o.error(err)
+        },
+        () => {
+          o.complete()
+        }
+      )
+  }).publish()
+
   const currencyPairCache = {
     hasLoaded: false
-  }
-
-  const addDisposable = disposable => {
-    // esp-js is expecting a dispose method
-    const prevProto = Object.getPrototypeOf(disposable)
-    prevProto.dispose = prevProto.unsubscribe
-    disposables.add(disposable)
   }
 
   // on connection/reconnection get reference data stream
@@ -75,12 +68,9 @@ export default function referenceDataService(connection): Object {
     .filter(el => el === ConnectionStatus.connected)
     .subscribe(() => {
       // TEMP force refdata reconnecting
-      serviceClient.isConnectCalled = false
-      referenceDataStreamConnectable.connection = null
-
-      addDisposable(referenceDataStreamConnectable.connect())
+      serviceClient.isConnected = false
+      disposables.add(referenceDataStreamConnectable.connect())
     })
-  serviceClient.connect()
 
   return {
     get serviceStatusStream() {

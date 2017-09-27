@@ -1,41 +1,48 @@
-import * as _ from 'lodash'
+import {
+  CurrencyPair,
+  CurrencyPairUpdate,
+  CurrencyPairUpdates,
+  CurrencyPairUpdateRaw,
+  CurrencyPairUpdatesRaw,
+  UpdateType
+} from '../../types'
 
-import { CurrencyPair, CurrencyPairUpdate, CurrencyPairUpdates, UpdateType } from '../../types'
+function mapCurrencyPairs(
+  currencyPairUpdates: CurrencyPairUpdatesRaw
+): CurrencyPairUpdates {
+  const updates = mapUpdates(currencyPairUpdates.Updates)
+  return {
+    isStateOfTheWorld: currencyPairUpdates.IsStateOfTheWorld,
+    isStale: currencyPairUpdates.IsStale,
+    currencyPairUpdates: updates
+  }
+}
 
-export default class ReferenceDataMapper {
-  mapCurrencyPairsFromDto(dto: any): CurrencyPairUpdates {
-    const updates = this.mapUpdatesFromDto(dto.Updates)
+function mapUpdates(
+  currencyPairUpdates: CurrencyPairUpdateRaw[]
+): CurrencyPairUpdate[] {
+  return currencyPairUpdates.map(update => {
+    const updateType = mapUpdateType(update.UpdateType)
+    const currencyPair = createCurrencyPair(
+      update.CurrencyPair.Symbol,
+      update.CurrencyPair.RatePrecision,
+      update.CurrencyPair.PipsPosition
+    )
+
     return {
-      isStateOfTheWorld: dto.IsStateOfTheWorld,
-      isStale: dto.IsStale,
-      currencyPairUpdates: updates,
+      currencyPair,
+      updateType
     }
-  }
+  })
+}
 
-  mapUpdatesFromDto(currencyPairUpdateDtos: Array<any>): Array<CurrencyPairUpdate> {
-    return _.map(currencyPairUpdateDtos, (dto): CurrencyPairUpdate => {
-      const updateType = this.mapUpdateType(dto.UpdateType)
-      const currencyPair = createCurrencyPair(
-        dto.CurrencyPair.Symbol,
-        dto.CurrencyPair.RatePrecision,
-        dto.CurrencyPair.PipsPosition,
-      )
-
-      return {
-        currencyPair,
-        updateType,
-      }
-    })
-  }
-
-  mapUpdateType(updateTypeString: string): UpdateType {
-    if (updateTypeString === UpdateType.Added) {
-      return UpdateType.Added
-    } else if (updateTypeString === UpdateType.Removed) {
-      return UpdateType.Removed
-    } else {
-      throw new Error(`Unknown update type [${updateTypeString}]`)
-    }
+function mapUpdateType(updateTypeString: string): UpdateType {
+  if (updateTypeString === UpdateType.Added) {
+    return UpdateType.Added
+  } else if (updateTypeString === UpdateType.Removed) {
+    return UpdateType.Removed
+  } else {
+    throw new Error(`Unknown update type [${updateTypeString}]`)
   }
 }
 
@@ -45,6 +52,10 @@ function createCurrencyPair(symbol, ratePrecision, pipsPosition): CurrencyPair {
     ratePrecision,
     pipsPosition,
     base: symbol.substr(0, 3),
-    terms: symbol.substr(3, 3),
+    terms: symbol.substr(3, 3)
   }
+}
+
+export default {
+  mapCurrencyPairs
 }
