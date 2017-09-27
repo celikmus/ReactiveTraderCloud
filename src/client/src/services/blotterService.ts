@@ -17,7 +17,6 @@ export default function blotterService(connection, referenceDataService) {
   return {
     serviceStatusStream: serviceClient.serviceStatusStream,
     getTradesStream() {
-      const tradeMapper = new TradeMapper(referenceDataService)
       return Observable.create(o => {
         log.debug('Subscribing to trade stream')
         return serviceClient
@@ -27,7 +26,7 @@ export default function blotterService(connection, referenceDataService) {
             'getTradesStream',
             Scheduler.async
           )
-          .map(dto => tradeMapper.mapFromDto(dto))
+          .map(dto => TradeMapper.mapTradesUpdate(referenceDataService, dto))
           .subscribe(o)
       })
     }

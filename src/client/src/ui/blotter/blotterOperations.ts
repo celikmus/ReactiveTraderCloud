@@ -13,16 +13,8 @@ export const fetchBlotter = createAction(ACTION_TYPES.BLOTTER_SERVICE)
 export const blotterServiceEpic = blotterService$ => action$ => {
   return action$
     .ofType(REF_ACTION_TYPES.REFERENCE_SERVICE)
-    .do(x => {
-      debugger
-      console.log(`action in epic: ${JSON.stringify(x)}`)
-    })
     .flatMapTo(blotterService$.getTradesStream())
-    .do(x => console.log(`In the epic here: ${JSON.stringify(x)}`))
     .map(fetchBlotter)
-    .do(x =>
-      console.log(`In the epic, post fetchBlotter: ${JSON.stringify(x)}`)
-    )
 }
 
 export const blotterRegionsSettings = regionsSettings(

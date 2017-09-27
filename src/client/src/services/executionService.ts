@@ -21,7 +21,6 @@ export default function executionService(
     ServiceConst.ExecutionServiceKey,
     connection
   )
-  const tradeMapper = new TradeMapper(referenceDataService)
   serviceClient.connect()
   return {
     get serviceStatusStream() {
@@ -53,7 +52,10 @@ export default function executionService(
                   Observable.merge(
                     request
                       .map(dto => {
-                        const trade = tradeMapper.mapFromTradeDto(dto.Trade)
+                        const trade = TradeMapper.mapTrade(
+                          referenceDataService,
+                          dto.Trade
+                        )
                         log.info(
                           `execute response received for: ${executeTradeRequest}. Status: ${trade.status}`,
                           dto
