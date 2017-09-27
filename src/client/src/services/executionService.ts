@@ -5,27 +5,25 @@ import {
 } from '../types/executeTradeResponse'
 import { TradeMapper } from './mappers'
 import { logger } from '../system'
-import { ServiceClient } from '../system/service'
+import { streamify } from '../system/service'
 import { ServiceConst } from '../types'
 
 const log = logger.create('ExecutionService')
+const EXECUTION_CLIENT_TIMEOUT_MS = 2000
+const EXECUTION_REQUEST_TIMEOUT_MS = 30000
 
 export default function executionService(
   connection,
   referenceDataService,
   openFin
 ): Object {
-  const EXECUTION_CLIENT_TIMEOUT_MS = 2000
-  const EXECUTION_REQUEST_TIMEOUT_MS = 30000
-  const serviceClient = new ServiceClient(
-    ServiceConst.ExecutionServiceKey,
-    connection
-  )
-  serviceClient.connect()
+  const service = {
+    connection,
+    serviceType: ServiceConst.ExecutionServiceKey
+  }
+  const serviceClient = streamify(service)
   return {
-    get serviceStatusStream() {
-      return serviceClient.serviceStatusStream
-    },
+    serviceStatusStream: serviceClient.serviceStatusStream,
     executeTrade(executeTradeRequest) {
       return Observable.create(o => {
         log.info('executing: ', executeTradeRequest)
