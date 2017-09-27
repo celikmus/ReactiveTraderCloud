@@ -5,19 +5,32 @@ import { regionsSettings } from '../../regions/regionsOperations'
 import { ACTION_TYPES as REF_ACTION_TYPES } from '../../referenceOperations'
 
 export const ACTION_TYPES = {
-  BLOTTER_SERVICE: '@ReactiveTraderCloud/BLOTTER_SERVICE',
+  BLOTTER_SERVICE: '@ReactiveTraderCloud/BLOTTER_SERVICE'
 }
 
 export const fetchBlotter = createAction(ACTION_TYPES.BLOTTER_SERVICE)
 
-
-export const blotterServiceEpic = blotterService$ => (action$) => {
-  return action$.ofType(REF_ACTION_TYPES.REFERENCE_SERVICE)
+export const blotterServiceEpic = blotterService$ => action$ => {
+  return action$
+    .ofType(REF_ACTION_TYPES.REFERENCE_SERVICE)
+    .do(x => {
+      debugger
+      console.log(`action in epic: ${JSON.stringify(x)}`)
+    })
     .flatMapTo(blotterService$.getTradesStream())
+    .do(x => console.log(`In the epic here: ${JSON.stringify(x)}`))
     .map(fetchBlotter)
+    .do(x =>
+      console.log(`In the epic, post fetchBlotter: ${JSON.stringify(x)}`)
+    )
 }
 
-export const blotterRegionsSettings = regionsSettings('Blotter', 850, 250, false)
+export const blotterRegionsSettings = regionsSettings(
+  'Blotter',
+  850,
+  250,
+  false
+)
 
 export const blotterServiceReducer = (state: any = {}, action) => {
   switch (action.type) {
@@ -34,10 +47,9 @@ export const blotterServiceReducer = (state: any = {}, action) => {
       }
       const trades = _.mapKeys(_.values(payloadTrades), 'tradeId')
       return {
-        trades: { ...trades, ...newState.trades },
+        trades: { ...trades, ...newState.trades }
       }
     default:
       return state
   }
 }
-

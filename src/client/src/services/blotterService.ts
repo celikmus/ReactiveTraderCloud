@@ -13,8 +13,9 @@ export default function blotterService(connection, referenceDataService) {
     serviceType: ServiceConst.BlotterServiceKey
   }
   const serviceClient = streamify(service)
+
   return {
-    ...serviceClient,
+    serviceStatusStream: serviceClient.serviceStatusStream,
     getTradesStream() {
       const tradeMapper = new TradeMapper(referenceDataService)
       return Observable.create(o => {
