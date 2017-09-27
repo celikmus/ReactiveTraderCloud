@@ -1,5 +1,5 @@
 import { Observable, Scheduler } from 'rxjs/Rx'
-import { ServiceClient } from '../system/service'
+import { streamify } from '../system/service'
 import { ServiceConst } from '../types'
 import { logger, RetryPolicy } from '../system'
 import '../system/observableExtensions/retryPolicyExt'
@@ -7,15 +7,13 @@ import '../system/observableExtensions/retryPolicyExt'
 const log = logger.create('PricingService')
 
 export default function createPricingService(connection) {
-  const serviceClient = new ServiceClient(
-    ServiceConst.PricingServiceKey,
-    connection
-  )
-  serviceClient.connect()
+  const service = {
+    connection,
+    serviceType: ServiceConst.PricingServiceKey
+  }
+  const serviceClient = streamify(service)
   return {
-    get serviceStatusStream() {
-      return serviceClient.serviceStatusStream
-    },
+    serviceStatusStream: serviceClient.serviceStatusStream,
     getSpotPriceStream(request) {
       const getPriceUpdatesOperationName = 'getPriceUpdates'
       return Observable.create(o => {
