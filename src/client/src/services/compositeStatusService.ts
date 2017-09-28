@@ -10,12 +10,6 @@ export default function compositeStatusService(
   analyticsService
 ): Object {
   const disposables = new Subscription()
-  const addDisposable = disposable => {
-    // esp-js is expecting a dispose method
-    const prevProto = Object.getPrototypeOf(disposable)
-    prevProto.dispose = prevProto.unsubscribe
-    disposables.add(disposable)
-  }
   const serviceStatusStream = Observable.merge(
     pricingService.serviceStatusStream,
     referenceDataService.serviceStatusStream,
@@ -33,12 +27,12 @@ export default function compositeStatusService(
   let currentServiceStatusLookup = new ServiceStatusLookup()
   // since we expose some synchronous state state that's derived from
   // async streams we need an explicit start to ensure the streams are always hot
-  addDisposable(
+  disposables.add(
     serviceStatusStream.subscribe(update => {
       currentServiceStatusLookup = update
     })
   )
-  addDisposable(serviceStatusStream.connect())
+  disposables.add(serviceStatusStream.connect())
   return {
     /**
    * A true/false stream indicating if we're connected on the wire

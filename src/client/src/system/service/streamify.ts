@@ -9,6 +9,7 @@ import logger from '../logger'
 import Guard from '../guard'
 import {
   ConnectionStatus,
+  Service,
   ServiceStatus,
   ServiceInstanceStatus
 } from '../../types/'
@@ -18,15 +19,10 @@ import '../../../src/system/service/serviceObservableExtensions'
 import '../observableExtensions/retryPolicyExt'
 
 const HEARTBEAT_TIMEOUT = 3000
-export default function streamify(service) {
+export default function streamify(service: Service) {
   const disposables = new Subscription()
   const { serviceType, connection } = service
   let isConnected = false
-  Guard.stringIsNotEmpty(
-    serviceType,
-    'serviceType required and should not be empty'
-  )
-  Guard.isDefined(connection, 'connection required')
   const log = logger.create(`ServiceClient:${serviceType}`)
   // create a connectible observable that yields a dictionary of connection status for
   // each service we're getting heartbeats from .
