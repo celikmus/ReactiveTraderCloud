@@ -9,7 +9,6 @@ import logger from '../logger'
 import Guard from '../guard'
 import {
   ConnectionStatus,
-  Service,
   ServiceStatus,
   ServiceInstanceStatus
 } from '../../types/'
@@ -19,7 +18,7 @@ import '../../../src/system/service/serviceObservableExtensions'
 import '../observableExtensions/retryPolicyExt'
 
 const HEARTBEAT_TIMEOUT = 3000
-export default function streamify(service: Service) {
+export default function streamify(service) {
   const disposables = new Subscription()
   const { serviceType, connection } = service
   let isConnected = false
