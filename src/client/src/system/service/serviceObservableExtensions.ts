@@ -1,4 +1,4 @@
-import { Observable, Subscription } from 'rxjs/Rx'
+import {Observable, Scheduler, Subscription} from 'rxjs/Rx'
 import { SerialSubscription } from '../../serialSubscription'
 import * as _ from 'lodash'
 import LastValueObservable from './lastValueObservable'
@@ -9,7 +9,7 @@ import LastValueObservableDictionary from './lastValueObservableDictionary'
  * @param dueTime
  * @param onDebounceItemFactory
  * @param scheduler
- * @returns {Logger|Object}
+ * @returns {Observable}
  */
 function debounceOnMissedHeartbeat<TValue>(this: Observable<TValue>, dueTime, onDebounceItemFactory, scheduler) {
   return Observable.create((o) => {
@@ -119,8 +119,8 @@ function distinctUntilChangedGroup<TValue>(this: Observable<TValue>, comparisonF
 Observable.prototype['distinctUntilChangedGroup'] = distinctUntilChangedGroup
 
 /**
- * Emits an item from the source Observable after a particular timespan has passed without the Observable omitting any other items.
- * The onTimeoutItemSelector selector is used to select the item to procure.
+ * Emits the original item from the source Observable and emits the item created by the function provided (itemSelector)
+ * using the scheduler (scheduler) given after the given delay (dueTime).
  * @param dueTime
  * @param itemSelector
  * @param scheduler
@@ -163,3 +163,24 @@ function debounceWithSelector<TValue>(this: Observable<TValue>, dueTime, itemSel
   })
 }
 Observable.prototype['debounceWithSelector'] = debounceWithSelector
+
+
+function refactoredDebounceWithSelector<TValue>(this: Observable<TValue>, dueTime, itemSelector, scheduler) {
+
+  // Streams that completes when 'this' streams completes
+  const onCompleteNotifier = Observable.create(o => {
+    this.subscribe(
+      null,
+      null,
+      () => o.complete()
+    )
+  }).concat(Observable.of(true)) // Concat needed as take until only stops the original stream onNext and NOT onComplete
+
+  const delayedHeartBeats = this.map(itemSelector)
+    .startWith(itemSelector())
+    .delay(dueTime, scheduler)
+    .takeUntil(onCompleteNotifier)
+
+  return Observable.merge(this, delayedHeartBeats)
+}
+Observable.prototype['refactoredDebounceWithSelector'] = refactoredDebounceWithSelector
