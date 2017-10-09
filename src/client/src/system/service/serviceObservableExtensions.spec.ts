@@ -18,7 +18,7 @@ describe('DebounceOnMissedHeartbeat', () => {
     const innerObservableSpy = jest.spyOn(innerObservable, 'debounceWithSelector')
 
     const source = cold('---a---a---a|', { a: innerObservable })
-    const expected =    '---b---b---b|'
+    const expected = '---b---b---b|'
 
     const testing = source.debounceOnMissedHeartbeat(delayInMillis, itemSelector, globalTestScheduler)
 
@@ -36,16 +36,27 @@ describe('getServiceWithMinLoad', () => {
           serviceType: 'analytics',
           serviceId: 'analytics.5348',
           serviceLoad: 0,
+          isConnected: false
+        },
+        stream: Observable.interval(10, globalTestScheduler).take(1)
+      },
+      'reference.5348': {
+        latestValue: {
+          serviceType: 'reference',
+          serviceId: 'reference.5348',
+          serviceLoad: 0.5,
           isConnected: true
         },
-        stream: Observable.interval(10, globalTestScheduler).take(1),
-        underlyingStream: {
-          _isScalar: false,
-          source: {
-            _isScalar: false
-          },
-          operator: {}
-        }
+        stream: Observable.interval(10, globalTestScheduler).take(1)
+      },
+      'pricing.5348': {
+        latestValue: {
+          serviceType: 'pricing',
+          serviceId: 'pricing.5348',
+          serviceLoad: 0.1,
+          isConnected: true
+        },
+        stream: Observable.interval(10, globalTestScheduler).take(1)
       }
     },
     version: 1
@@ -57,17 +68,16 @@ describe('getServiceWithMinLoad', () => {
 
   test('should getMinLoad', () => {
     const source = cold('--a----|', { a: sampleLastValueObservableDictionary })
-    const expected =    '--m----'
+    const expected = '--m----'
+    const expectedLastValue = {
+      serviceType: 'pricing',
+      serviceId: 'pricing.5348',
+      serviceLoad: 0.1,
+      isConnected: true
+    }
 
     const testing = source.getServiceWithMinLoad()
-    expectObservable(testing).toBe(expected, {
-      m: {
-        serviceType: 'analytics',
-        serviceId: 'analytics.5348',
-        serviceLoad: 0,
-        isConnected: true
-      }
-    })
+    expectObservable(testing).toBe(expected, { m: expectedLastValue })
 
     globalTestScheduler.flush()
   })
@@ -85,7 +95,7 @@ describe('Debounce with selector', () => {
   test('should emit item created by calling itemSelector after delay as soon as subscribed as well as for each ' +
     'other item emitted from the original source thereafter', () => {
     const source = cold('---a---b---c|')
-    const expected =    '-v-av--bv--c|'
+    const expected = '-v-av--bv--c|'
 
     const testing = source.refactoredDebounceWithSelector(delayInMillis, itemSelector, globalTestScheduler)
     expectObservable(testing).toBe(expected)
