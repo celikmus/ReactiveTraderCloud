@@ -179,7 +179,7 @@ function refactoredDebounceWithSelector<TValue>(this: Observable<TValue>, dueTim
 
   // Streams that completes when 'this' streams completes
   const onCompleteNotifier = Observable.create(o => {
-    this.subscribe(
+    return this.subscribe(
       null,
       null,
       () => o.complete()
