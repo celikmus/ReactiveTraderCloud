@@ -66,7 +66,7 @@ describe('getServiceWithMinLoad', () => {
     globalTestScheduler = getGlobalTestScheduler()
   })
 
-  test('should getMinLoad', () => {
+  test('should get LastValue of the least loaded service', () => {
     const source = cold('--a----|', { a: sampleLastValueObservableDictionary })
     const expected = '--m----'
     const expectedLastValue = {
@@ -80,6 +80,22 @@ describe('getServiceWithMinLoad', () => {
     expectObservable(testing).toBe(expected, { m: expectedLastValue })
 
     globalTestScheduler.flush()
+  })
+
+  test('should throw error if no service is available and wait flag is false', (done) => {
+    const source = cold('--a----|')
+    const expected = 'Error: No service available'
+    let result = ''
+    source.getServiceWithMinLoad(false).subscribe(
+      () => null,
+      (e) => {
+        result = e.toString()
+        done()
+      },
+      c => null)
+
+    globalTestScheduler.flush()
+    expect(result).toBe(expected)
   })
 })
 
