@@ -16,7 +16,8 @@ import { GroupedObservable } from 'rxjs/operator/groupBy'
  */
 function debounceOnMissedHeartbeat<TValue>(this: Observable<TValue>, dueTime, onDebounceItemFactory, scheduler) {
   return Observable.create((o) => {
-    return this.subscribe((innerSource: any) => {
+    return this.subscribe(
+      (innerSource: any) => {
         const key = innerSource.key
         const debouncedStream = innerSource.debounceWithSelector(dueTime, () => onDebounceItemFactory(key), scheduler)
         o.next(debouncedStream)
@@ -29,12 +30,10 @@ function debounceOnMissedHeartbeat<TValue>(this: Observable<TValue>, dueTime, on
 
 Observable.prototype['debounceOnMissedHeartbeat'] = debounceOnMissedHeartbeat
 
-function refactoredDebounceOnMissedHeartbeat<K, TValue extends GroupedObservable<K, TValue>>(
-  this: GroupedObservable<K, TValue>,
-  dueTime,
-  onDebounceItemFactory,
-  scheduler
-) {
+function refactoredDebounceOnMissedHeartbeat<K, TValue extends GroupedObservable<K, TValue>>(this: GroupedObservable<K, TValue>,
+                                                                                             dueTime,
+                                                                                             onDebounceItemFactory,
+                                                                                             scheduler) {
   return this.map((innerSource: any) =>
     innerSource.debounceWithSelector(dueTime, () => onDebounceItemFactory(innerSource.key), scheduler)
   )
@@ -127,7 +126,8 @@ Observable.prototype['getServiceWithMinLoad'] = getServiceWithMinLoad
  */
 function distinctUntilChangedGroup<TValue>(this: Observable<TValue>, comparisonFn) {
   return Observable.create((o) => {
-    return this.subscribe((innerSource: any) => {
+    return this.subscribe(
+      (innerSource: any) => {
         const distinctStream = innerSource.distinctUntilChanged(comparisonFn)
         o.next(distinctStream)
       },
