@@ -3,8 +3,8 @@ import { SerialSubscription } from '../../serialSubscription'
 import * as _ from 'lodash'
 import LastValueObservable from './lastValueObservable'
 import LastValueObservableDictionary from './lastValueObservableDictionary'
-import { IScheduler } from "rxjs/Scheduler";
-import { GroupedObservable } from "rxjs/operator/groupBy";
+import { IScheduler } from 'rxjs/Scheduler'
+import { GroupedObservable } from 'rxjs/operator/groupBy'
 
 /**
  * TODO this assumes that the innerStream is a stream of Grouped Observables, needs to be changed to be agnostic and move key logic up one level
@@ -17,15 +17,16 @@ import { GroupedObservable } from "rxjs/operator/groupBy";
 function debounceOnMissedHeartbeat<TValue>(this: Observable<TValue>, dueTime, onDebounceItemFactory, scheduler) {
   return Observable.create((o) => {
     return this.subscribe((innerSource: any) => {
-      const key = innerSource.key
-      const debouncedStream = innerSource.debounceWithSelector(dueTime, () => onDebounceItemFactory(key), scheduler)
-      o.next(debouncedStream)
-    },
+        const key = innerSource.key
+        const debouncedStream = innerSource.debounceWithSelector(dueTime, () => onDebounceItemFactory(key), scheduler)
+        o.next(debouncedStream)
+      },
       ex => o.error(ex),
-      () => o.complete(),
+      () => o.complete()
     )
   })
 }
+
 Observable.prototype['debounceOnMissedHeartbeat'] = debounceOnMissedHeartbeat
 
 function refactoredDebounceOnMissedHeartbeat<K, TValue extends GroupedObservable<K, TValue>>(this: GroupedObservable<K, TValue>, dueTime, onDebounceItemFactory, scheduler) {
@@ -33,6 +34,7 @@ function refactoredDebounceOnMissedHeartbeat<K, TValue extends GroupedObservable
     innerSource.debounceWithSelector(dueTime, () => onDebounceItemFactory(innerSource.key), scheduler)
   )
 }
+
 Observable.prototype['refactoredDebounceOnMissedHeartbeat'] = refactoredDebounceOnMissedHeartbeat
 
 /**
@@ -64,18 +66,20 @@ function toServiceStatusObservableDictionary<TValue>(this: Observable<TValue>, k
             (ex) => {
               try {
                 o.error(ex)
-              } catch (err1) {}
+              } catch (err1) {
+              }
             },// if any of the inner streams error or complete, we error the outer
-            () => o.complete(),
+            () => o.complete()
           ))
         },
         ex => o.error(ex),
-        () => o.complete(),
-      ),
+        () => o.complete()
+      )
     )
     return disposables
   })
 }
+
 Observable.prototype['toServiceStatusObservableDictionary'] = toServiceStatusObservableDictionary
 
 /**
@@ -91,13 +95,13 @@ function getServiceWithMinLoad<TValue>(this: Observable<TValue>, waitForServiceI
     findServiceInstanceDisposable = this.subscribe(
       (dictionary: any) => {
         const serviceWithLeastLoad = _(dictionary.values)
-          .sortBy(i => i.latestValue.serviceLoad)
-          .find(i => i.latestValue.isConnected)
+        .sortBy(i => i.latestValue.serviceLoad)
+        .find(i => i.latestValue.isConnected)
         if (serviceWithLeastLoad) {
           findServiceInstanceDisposable.unsubscribe()
           const serviceStatusStream = Observable.of(serviceWithLeastLoad.latestValue)
-            .concat(serviceWithLeastLoad.stream)
-            .subscribe(o)
+          .concat(serviceWithLeastLoad.stream)
+          .subscribe(o)
           disposables.add(serviceStatusStream)
         } else if (!waitForServiceIfNoneAvailable) {
           o.error(new Error('No service available'))
@@ -105,11 +109,12 @@ function getServiceWithMinLoad<TValue>(this: Observable<TValue>, waitForServiceI
       },
       (ex) => {
         o.error(ex)
-      },
+      }
     )
     return disposables
   })
 }
+
 Observable.prototype['getServiceWithMinLoad'] = getServiceWithMinLoad
 
 /**
@@ -118,14 +123,15 @@ Observable.prototype['getServiceWithMinLoad'] = getServiceWithMinLoad
 function distinctUntilChangedGroup<TValue>(this: Observable<TValue>, comparisonFn) {
   return Observable.create((o) => {
     return this.subscribe((innerSource: any) => {
-      const distinctStream = innerSource.distinctUntilChanged(comparisonFn)
-      o.next(distinctStream)
-    },
+        const distinctStream = innerSource.distinctUntilChanged(comparisonFn)
+        o.next(distinctStream)
+      },
       ex => o.error(ex),
-      () => o.complete(),
+      () => o.complete()
     )
   })
 }
+
 Observable.prototype['distinctUntilChangedGroup'] = distinctUntilChangedGroup
 
 /**
@@ -149,8 +155,8 @@ function debounceWithSelector<TValue>(this: Observable<TValue>, dueTime, itemSel
             o.next(debouncedItem)
           },
           dueTime,
-          '',
-        ),
+          ''
+        )
       )
     }
     disposables.add(
@@ -165,13 +171,14 @@ function debounceWithSelector<TValue>(this: Observable<TValue>, dueTime, itemSel
           } catch (err1) {
           }
         },
-        () => o.complete(),
-      ),
+        () => o.complete()
+      )
     )
     debounce()
     return disposables
   })
 }
+
 Observable.prototype['debounceWithSelector'] = debounceWithSelector
 
 
@@ -187,10 +194,11 @@ function refactoredDebounceWithSelector<TValue>(this: Observable<TValue>, dueTim
   }).concat(Observable.of(true)) // Concat needed as take until only stops the original stream onNext and NOT onComplete
 
   const delayedHeartBeats = this.map(itemSelector)
-    .startWith(itemSelector())
-    .delay(dueTime, scheduler)
-    .takeUntil(onCompleteNotifier)
+  .startWith(itemSelector())
+  .delay(dueTime, scheduler)
+  .takeUntil(onCompleteNotifier)
 
   return Observable.merge(this, delayedHeartBeats)
 }
+
 Observable.prototype['refactoredDebounceWithSelector'] = refactoredDebounceWithSelector

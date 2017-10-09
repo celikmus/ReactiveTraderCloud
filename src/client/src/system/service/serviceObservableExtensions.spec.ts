@@ -1,4 +1,5 @@
-import { cold, expectObservable, getGlobalTestScheduler } from "../../test-utils/marble-testing";
+import { Observable } from 'rxjs/Observable'
+import { cold, expectObservable, getGlobalTestScheduler } from '../../test-utils/marble-testing'
 import '../../system/service/serviceObservableExtensions'
 
 let globalTestScheduler
@@ -10,7 +11,7 @@ describe('DebounceOnMissedHeartbeat', () => {
   })
 
   test('should add debounce on missed heartbeat to each individual service', () => {
-    const MOCKED_OBSERVABLE = 'mockedObservable';
+    const MOCKED_OBSERVABLE = 'mockedObservable'
     const delayInMillis: number = 10
     const itemSelector: Function = (key) => key
     const innerObservable = { debounceWithSelector: (dueTime, itemSelector, scheduler) => MOCKED_OBSERVABLE }
@@ -21,9 +22,54 @@ describe('DebounceOnMissedHeartbeat', () => {
 
     const testing = source.debounceOnMissedHeartbeat(delayInMillis, itemSelector, globalTestScheduler)
 
-    expectObservable(testing).toBe(expected, { b: MOCKED_OBSERVABLE})
+    expectObservable(testing).toBe(expected, { b: MOCKED_OBSERVABLE })
     globalTestScheduler.flush()
     expect(innerObservableSpy).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('getServiceWithMinLoad', () => {
+  const sampleLastValueObservableDictionary = {
+    values: {
+      'analytics.5348': {
+        latestValue: {
+          serviceType: 'analytics',
+          serviceId: 'analytics.5348',
+          serviceLoad: 0,
+          isConnected: true
+        },
+        stream: Observable.interval(10, globalTestScheduler).take(1),
+        underlyingStream: {
+          _isScalar: false,
+          source: {
+            _isScalar: false
+          },
+          operator: {}
+        }
+      }
+    },
+    version: 1
+  }
+
+  beforeEach(() => {
+    globalTestScheduler = getGlobalTestScheduler()
+  })
+
+  test('should getMinLoad', () => {
+    const source = cold('--a----|', { a: sampleLastValueObservableDictionary })
+    const expected =    '--m----'
+
+    const testing = source.getServiceWithMinLoad()
+    expectObservable(testing).toBe(expected, {
+      m: {
+        serviceType: 'analytics',
+        serviceId: 'analytics.5348',
+        serviceLoad: 0,
+        isConnected: true
+      }
+    })
+
+    globalTestScheduler.flush()
   })
 })
 
