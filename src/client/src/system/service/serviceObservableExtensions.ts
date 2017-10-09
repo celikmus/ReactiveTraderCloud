@@ -1,10 +1,13 @@
-import {Observable, Scheduler, Subscription} from 'rxjs/Rx'
+import { Observable, Subscription } from 'rxjs/Rx'
 import { SerialSubscription } from '../../serialSubscription'
 import * as _ from 'lodash'
 import LastValueObservable from './lastValueObservable'
 import LastValueObservableDictionary from './lastValueObservableDictionary'
+import { IScheduler } from "rxjs/Scheduler";
+import { GroupedObservable } from "rxjs/operator/groupBy";
 
 /**
+ * TODO this assumes that the innerStream is a stream of Grouped Observables, needs to be changed to be agnostic and move key logic up one level
  * Adds timeout semantics to the inner observable streams, on timeout calls onDebounceItemFactory to get the item to pump down the stream
  * @param dueTime
  * @param onDebounceItemFactory
@@ -24,6 +27,13 @@ function debounceOnMissedHeartbeat<TValue>(this: Observable<TValue>, dueTime, on
   })
 }
 Observable.prototype['debounceOnMissedHeartbeat'] = debounceOnMissedHeartbeat
+
+function refactoredDebounceOnMissedHeartbeat<K, TValue extends GroupedObservable<K, TValue>>(this: GroupedObservable<K, TValue>, dueTime, onDebounceItemFactory, scheduler) {
+  return this.map((innerSource: any) =>
+    innerSource.debounceWithSelector(dueTime, () => onDebounceItemFactory(innerSource.key), scheduler)
+  )
+}
+Observable.prototype['refactoredDebounceOnMissedHeartbeat'] = refactoredDebounceOnMissedHeartbeat
 
 /**
  * Flattens an Observable of Observables into an Observable of LastValueObservableDictionary.
@@ -165,7 +175,7 @@ function debounceWithSelector<TValue>(this: Observable<TValue>, dueTime, itemSel
 Observable.prototype['debounceWithSelector'] = debounceWithSelector
 
 
-function refactoredDebounceWithSelector<TValue>(this: Observable<TValue>, dueTime, itemSelector, scheduler) {
+function refactoredDebounceWithSelector<TValue>(this: Observable<TValue>, dueTime: number, itemSelector: any, scheduler: IScheduler) {
 
   // Streams that completes when 'this' streams completes
   const onCompleteNotifier = Observable.create(o => {

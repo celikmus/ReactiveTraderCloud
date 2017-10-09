@@ -6,7 +6,11 @@ import { Observable } from "rxjs/Observable";
 import { SubscriptionLog } from "rxjs/testing/SubscriptionLog";
 import { observableToBeFn, subscriptionLogsToBeFn } from "rxjs/testing/TestScheduler";
 
-export const globalTestScheduler = new TestScheduler(observableMatcher)
+let globalTestScheduler = new TestScheduler(observableMatcher)
+
+export function getGlobalTestScheduler() {
+  return globalTestScheduler = new TestScheduler(observableMatcher)
+}
 
 export function hot(marbles: string, values?: any, error?: any): HotObservable<any> {
   if (!globalTestScheduler) {
