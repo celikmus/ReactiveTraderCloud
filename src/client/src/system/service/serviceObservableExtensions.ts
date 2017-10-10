@@ -122,6 +122,7 @@ function getServiceWithMinLoad<TValue>(this: Observable<TValue>, waitForServiceI
 Observable.prototype['getServiceWithMinLoad'] = getServiceWithMinLoad
 
 /**
+ * // TODO this function works for all observables of observables and not just grouped, maybe change the signature and comments
  * Adds distinctUntilChanged semantics to inner streams of a grouped observable
  */
 function distinctUntilChangedGroup<TValue>(this: Observable<TValue>, comparisonFn) {
@@ -138,6 +139,12 @@ function distinctUntilChangedGroup<TValue>(this: Observable<TValue>, comparisonF
 }
 
 Observable.prototype['distinctUntilChangedGroup'] = distinctUntilChangedGroup
+
+function refactoredDistinctUntilChangedGroup<TValue>(this: Observable<TValue>, comparisonFn) {
+  return this.map(innerObserable => innerObserable.distinctUntilChanged(comparisonFn))
+}
+
+Observable.prototype['refactoredDistinctUntilChangedGroup'] = refactoredDistinctUntilChangedGroup
 
 /**
  * Emits the original item from the source Observable and emits the item created by the function provided (itemSelector)

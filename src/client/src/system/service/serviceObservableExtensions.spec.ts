@@ -20,7 +20,7 @@ describe('DebounceOnMissedHeartbeat', () => {
     const source = cold('---a---a---a|', { a: innerObservable })
     const expected = '---b---b---b|'
 
-    const testing = source.debounceOnMissedHeartbeat(delayInMillis, itemSelector, globalTestScheduler)
+    const testing = source.refactoredDebounceOnMissedHeartbeat(delayInMillis, itemSelector, globalTestScheduler)
 
     expectObservable(testing).toBe(expected, { b: MOCKED_OBSERVABLE })
     globalTestScheduler.flush()
@@ -114,6 +114,27 @@ describe('Debounce with selector', () => {
     const expected = '-v-av--bv--c|'
 
     const testing = source.refactoredDebounceWithSelector(delayInMillis, itemSelector, globalTestScheduler)
+    expectObservable(testing).toBe(expected)
+
+    globalTestScheduler.flush()
+  })
+})
+
+describe('DistinctUntilChangedGroup', () => {
+
+  beforeEach(() => {
+    globalTestScheduler = getGlobalTestScheduler()
+  })
+
+  test('should apply distincUntilChanged semantics to an observable of observables', () =>  {
+
+    const comparisonFunction = (item1, item2) => item1 === item2
+    const observableWithDuplicatedConsegutiveValues = cold('1122211|')
+    const source = cold('---a---a---', { a: observableWithDuplicatedConsegutiveValues })
+    const expected =    '---1-2--1-1-2--1---'
+
+    // using concat all to be able to collect results from inner observables
+    const testing = source.refactoredDistinctUntilChangedGroup(comparisonFunction).concatAll()
     expectObservable(testing).toBe(expected)
 
     globalTestScheduler.flush()
