@@ -17,7 +17,7 @@ class TradeNotification extends React.Component<any, {}> {
   }
 
   public showOpenFinNotificationsForNewTrades(previousTrades, payloadTrades) {
-    _.forEach(payloadTrades, (trade) => {
+    _.forEach(payloadTrades, (trade: any) => {
       // ignore existing trades, unless it was pending
       if (previousTrades[trade.tradeId] && previousTrades[trade.tradeId].status !== TradeStatus.Pending) return
 

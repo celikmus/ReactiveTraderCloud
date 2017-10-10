@@ -126,17 +126,55 @@ describe('DistinctUntilChangedGroup', () => {
     globalTestScheduler = getGlobalTestScheduler()
   })
 
-  test('should apply distincUntilChanged semantics to an observable of observables', () =>  {
+  test('should apply distincUntilChanged semantics to an observable of observables', () => {
 
     const comparisonFunction = (item1, item2) => item1 === item2
-    const observableWithDuplicatedConsegutiveValues = cold('1122211|')
+    const observableWithDuplicatedConsegutiveValues = cold('1122211')
     const source = cold('---a---a---', { a: observableWithDuplicatedConsegutiveValues })
-    const expected =    '---1-2--1-1-2--1---'
-
-    // using concat all to be able to collect results from inner observables
-    const testing = source.refactoredDistinctUntilChangedGroup(comparisonFunction).concatAll()
-    expectObservable(testing).toBe(expected)
+    const expected = '---b---b---'
+    const expectedInnerObservable = cold('1-2--1-')
+    const testing = source.refactoredDistinctUntilChangedGroup(comparisonFunction)
+    expectObservable(testing).toBe(expected, { b: expectedInnerObservable })
 
     globalTestScheduler.flush()
   })
+})
+
+
+describe('toServiceStatusObservableDictionary', () => {
+  beforeEach(() => {
+    globalTestScheduler = getGlobalTestScheduler()
+  })
+
+  // test('should flatten given observables stream as dictionary stream', () => {
+  //   const innerSourceItem = {
+  //     serviceType: 'reference',
+  //     serviceId: 'reference.4958',
+  //     serviceLoad: 0.04,
+  //     isConnected: true
+  //   }
+  //   const innerSourceStream = cold('a', { a: innerSourceItem })
+  //   const expectedOutputDictionary = {
+  //     values: {
+  //       'reference.4958': {
+  //         latestValue: {
+  //           serviceType: 'reference',
+  //           serviceId: 'reference.4958',
+  //           serviceLoad: 0.04,
+  //           isConnected: true
+  //         },
+  //         underlyingStream: innerSourceStream
+  //       }
+  //     },
+  //     version: 1
+  //   }
+  //   const keySelector: Function = obj => obj.serviceId
+  //   const source = cold('--b----', { b: innerSourceStream })
+  //   const expected = '--m'
+  //
+  //   const testing = source.toServiceStatusObservableDictionary(keySelector)
+  //   expectObservable(testing).toBe(expected, { m: expectedOutputDictionary })
+  //
+  //   globalTestScheduler.flush()
+  // })
 })

@@ -7,6 +7,7 @@ import PNLChart from './PNLChart'
 import AnalyticsBarChart from './chart/AnalyticsBarChart'
 import { PositionsChartModel } from './model/positionsChartModel'
 import './AnalyticsStyles.scss'
+import * as _ from 'lodash'
 
 export interface AnalyticsProps {
   canPopout: boolean

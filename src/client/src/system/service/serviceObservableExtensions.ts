@@ -31,9 +31,9 @@ function debounceOnMissedHeartbeat<TValue>(this: Observable<TValue>, dueTime, on
 Observable.prototype['debounceOnMissedHeartbeat'] = debounceOnMissedHeartbeat
 
 function refactoredDebounceOnMissedHeartbeat<K, TValue extends GroupedObservable<K, TValue>>(this: GroupedObservable<K, TValue>,
-                                                                                             dueTime,
-                                                                                             onDebounceItemFactory,
-                                                                                             scheduler) {
+  dueTime,
+  onDebounceItemFactory,
+  scheduler) {
   return this.map((innerSource: any) =>
     innerSource.debounceWithSelector(dueTime, () => onDebounceItemFactory(innerSource.key), scheduler)
   )
@@ -61,7 +61,8 @@ function toServiceStatusObservableDictionary<TValue>(this: Observable<TValue>, k
             (value) => {
               const key = keySelector(value)
               if (!dictionary.hasKey(key)) {
-                dictionary.add(key, new LastValueObservable(innerSource, value))
+                const dictionaryObs = new LastValueObservable(innerSource, value)
+                dictionary.add(key, dictionaryObs)
               } else {
                 dictionary.updateWithLatestValue(key, value)
               }
@@ -141,7 +142,7 @@ function distinctUntilChangedGroup<TValue>(this: Observable<TValue>, comparisonF
 Observable.prototype['distinctUntilChangedGroup'] = distinctUntilChangedGroup
 
 function refactoredDistinctUntilChangedGroup<TValue>(this: Observable<TValue>, comparisonFn) {
-  return this.map(innerObserable => innerObserable.distinctUntilChanged(comparisonFn))
+  return this.map((innerObserable: any) => innerObserable.distinctUntilChanged(comparisonFn))
 }
 
 Observable.prototype['refactoredDistinctUntilChangedGroup'] = refactoredDistinctUntilChangedGroup

@@ -5,6 +5,7 @@ import { connect } from 'react-redux'
 import { blotterRegionsSettings } from './blotterOperations'
 import { openWindow, addRegion } from '../../regions/regionsOperations'
 import Blotter from './Blotter'
+import * as _ from 'lodash'
 
 class BlotterContainer extends React.Component<any, {}> {
 
