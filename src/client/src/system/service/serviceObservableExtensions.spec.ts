@@ -161,13 +161,12 @@ describe('toServiceStatusObservableDictionary', () => {
     const latestValueObservable = new LastValueObservable(innerSourceStream, innerSourceItem)
     const expectedOutputDictionary = new LastValueObservableDictionary()
     expectedOutputDictionary.add(keySelector(innerSourceItem), latestValueObservable)
-    const expectedOutputDictionaryStream = cold('e', { e: expectedOutputDictionary })
 
-    const source = cold('--b----', { b: innerSourceStream })
+    const source = cold('--b---', { b: innerSourceStream })
     const expected = '--m'
 
     const testing = source.toServiceStatusObservableDictionary(keySelector)
-    expectObservable(testing).toBe(expected, { m: expectedOutputDictionaryStream })
+    expectObservable(testing).toBe(expected, { m: expectedOutputDictionary })
 
     globalTestScheduler.flush()
   })
