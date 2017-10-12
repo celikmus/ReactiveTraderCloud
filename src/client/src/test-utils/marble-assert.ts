@@ -1,4 +1,4 @@
-import { isEqualWith } from 'lodash'
+import * as _ from 'lodash'
 import { TestScheduler } from 'rxjs/Rx'
 
 function deleteErrorNotificationStack(marble) {
@@ -14,9 +14,6 @@ function deleteErrorNotificationStack(marble) {
 
 function stringify(x): string {
   return JSON.stringify(x, function (key, value) {
-    if (key === 'scheduler' && value instanceof TestScheduler) {
-      return 'TestScheduler'
-    }
     if (Array.isArray(value)) {
       return '[' + value
       .map(function (i) {
@@ -30,14 +27,28 @@ function stringify(x): string {
   .replace(/\\n/g, '\n')
 }
 
-const customizer = (o1, o2) => o1 && o1.scheduler && o1.scheduler instanceof TestScheduler ? true : undefined
+function cleanProperties(obj) {
+    for (let prop in obj) {
+      if (obj.hasOwnProperty(prop)) {
+        if(typeof obj[prop] === 'function') {
+          obj[prop] = 'Function'
+        } else  if (obj[prop] instanceof TestScheduler) {
+          obj[prop] = 'TestScheduler'
+        } else if (typeof obj[prop] === 'object') {
+          cleanProperties(obj[prop])
+        }
+      }
+    }
+}
 
-function observableMatcher(actual, expected) {
+export function observableMatcher(actual, expected) {
   if (Array.isArray(actual) && Array.isArray(expected)) {
     actual = actual.map(deleteErrorNotificationStack)
     expected = expected.map(deleteErrorNotificationStack)
+    cleanProperties(actual)
+    cleanProperties(expected)
 
-    const passed = isEqualWith(actual, expected, customizer)
+    const passed = _.isEqual(actual, expected)
     if (passed) {
       return
     }
@@ -53,8 +64,4 @@ function observableMatcher(actual, expected) {
   } else {
     expect(actual).toEqual(expected)
   }
-}
-
-export {
-  observableMatcher
 }

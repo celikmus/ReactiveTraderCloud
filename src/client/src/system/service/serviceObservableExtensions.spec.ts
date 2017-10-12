@@ -1,6 +1,9 @@
 import { Observable } from 'rxjs/Observable'
 import { cold, expectObservable, getGlobalTestScheduler } from '../../test-utils/marble-testing'
 import '../../system/service/serviceObservableExtensions'
+import * as _ from 'lodash'
+import LastValueObservable from "./lastValueObservable";
+import LastValueObservableDictionary from "./lastValueObservableDictionary";
 
 let globalTestScheduler
 
@@ -146,35 +149,26 @@ describe('toServiceStatusObservableDictionary', () => {
     globalTestScheduler = getGlobalTestScheduler()
   })
 
-  // test('should flatten given observables stream as dictionary stream', () => {
-  //   const innerSourceItem = {
-  //     serviceType: 'reference',
-  //     serviceId: 'reference.4958',
-  //     serviceLoad: 0.04,
-  //     isConnected: true
-  //   }
-  //   const innerSourceStream = cold('a', { a: innerSourceItem })
-  //   const expectedOutputDictionary = {
-  //     values: {
-  //       'reference.4958': {
-  //         latestValue: {
-  //           serviceType: 'reference',
-  //           serviceId: 'reference.4958',
-  //           serviceLoad: 0.04,
-  //           isConnected: true
-  //         },
-  //         underlyingStream: innerSourceStream
-  //       }
-  //     },
-  //     version: 1
-  //   }
-  //   const keySelector: Function = obj => obj.serviceId
-  //   const source = cold('--b----', { b: innerSourceStream })
-  //   const expected = '--m'
-  //
-  //   const testing = source.toServiceStatusObservableDictionary(keySelector)
-  //   expectObservable(testing).toBe(expected, { m: expectedOutputDictionary })
-  //
-  //   globalTestScheduler.flush()
-  // })
+  test('should flatten given observables stream as dictionary stream', () => {
+    const keySelector: Function = obj => obj.serviceId
+    const innerSourceItem = {
+      serviceType: 'reference',
+      serviceId: 'reference.4958',
+      serviceLoad: 0.04,
+      isConnected: true
+    }
+    const innerSourceStream = cold('a', { a: innerSourceItem })
+    const latestValueObservable = new LastValueObservable(innerSourceStream, innerSourceItem)
+    const expectedOutputDictionary = new LastValueObservableDictionary()
+    expectedOutputDictionary.add(keySelector(innerSourceItem), latestValueObservable)
+    const expectedOutputDictionaryStream = cold('e', { e: expectedOutputDictionary })
+
+    const source = cold('--b----', { b: innerSourceStream })
+    const expected = '--m'
+
+    const testing = source.toServiceStatusObservableDictionary(keySelector)
+    expectObservable(testing).toBe(expected, { m: expectedOutputDictionaryStream })
+
+    globalTestScheduler.flush()
+  })
 })
