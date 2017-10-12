@@ -1,13 +1,14 @@
 import { Observable, Scheduler, Subscription } from 'rxjs/Rx'
 import { ReferenceDataMapper } from './mappers'
-import { ConnectionStatus, UpdateType, ServiceConst } from '../types'
+import { ConnectionStatus, UpdateType, ServiceConst, ReferenceDataService } from '../types'
 import { logger, RetryPolicy } from '../system'
 import { streamify } from '../system/service'
 import '../system/observableExtensions/retryPolicyExt'
+import LastValueObservableDictionary from '../system/service/lastValueObservableDictionary'
 
 const log = logger.create('ReferenceDataService')
 
-export default function referenceDataService(connection): Object {
+export default function referenceDataService(connection) : ReferenceDataService {
   const service = {
     connection,
     serviceType: ServiceConst.ReferenceServiceKey
@@ -72,10 +73,10 @@ export default function referenceDataService(connection): Object {
     })
 
   return {
-    get serviceStatusStream() {
+    get serviceStatusStream(): Observable<Observable<LastValueObservableDictionary>> {
       return serviceClient.serviceStatusStream
     },
-    getCurrencyPair(symbol) {
+    getCurrencyPair(symbol): Function  {
       if (!currencyPairCache.hasLoaded) {
         throw new Error(`Reference data cache hasn't finished loading`)
       }
@@ -87,8 +88,9 @@ export default function referenceDataService(connection): Object {
       return currencyPairCache[symbol]
     },
 
-    getCurrencyPairUpdatesStream() {
+    getCurrencyPairUpdatesStream(): Function {
       return referenceDataStreamConnectable
     }
   }
+
 }

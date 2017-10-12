@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { User } from './types'
-import createConnection from './system/service/connection'
+import createConnection, { Connection } from './system/service/connection'
 import { OpenFin } from './system/openFin'
 import { ShellContainer, OpenFinProvider } from './ui/shell'
 import { Provider } from 'react-redux'
@@ -22,7 +22,7 @@ import configureStore from './configureStore'
 // When the application is run in openfin then 'fin' will be registered on the global window object.
 declare const window: any
 
-const connectSocket = () => {
+const connectSocket = (): Connection => {
   const user: User = FakeUserRepository.currentUser
   const realm = 'com.weareadaptive.reactivetrader'
   const url = config.overwriteServerEndpoint

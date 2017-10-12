@@ -92,7 +92,7 @@ Observable.prototype['toServiceStatusObservableDictionary'] = toServiceStatusObs
  * @param waitForServiceIfNoneAvailable
  * @returns {Observable}
  */
-function getServiceWithMinLoad<TValue>(this: Observable<TValue>, waitForServiceIfNoneAvailable = true) {
+function getServiceWithMinLoad<T, Tout>(this: Observable<T>, waitForServiceIfNoneAvailable = true): Observable<Observable<Tout>> {
   return Observable.create((o) => {
     const disposables = new Subscription()
     let findServiceInstanceDisposable = new Subscription()
@@ -100,13 +100,13 @@ function getServiceWithMinLoad<TValue>(this: Observable<TValue>, waitForServiceI
     findServiceInstanceDisposable = this.subscribe(
       (dictionary: any) => {
         const serviceWithLeastLoad = _(dictionary.values)
-        .sortBy(i => i.latestValue.serviceLoad)
-        .find(i => i.latestValue.isConnected)
+          .sortBy(i => i.latestValue.serviceLoad)
+          .find(i => i.latestValue.isConnected)
         if (serviceWithLeastLoad) {
           findServiceInstanceDisposable.unsubscribe()
           const serviceStatusStream = Observable.of(serviceWithLeastLoad.latestValue)
-          .concat(serviceWithLeastLoad.stream)
-          .subscribe(o)
+            .concat(serviceWithLeastLoad.stream)
+            .subscribe(o)
           disposables.add(serviceStatusStream)
         } else if (!waitForServiceIfNoneAvailable) {
           o.error(new Error('No service available'))
@@ -207,9 +207,9 @@ function refactoredDebounceWithSelector<TValue>(this: Observable<TValue>, dueTim
   }).concat(Observable.of(true)) // Concat needed as take until only stops the original stream onNext and NOT onComplete
 
   const delayedHeartBeats = this.map(itemSelector)
-  .startWith(itemSelector())
-  .delay(dueTime, scheduler)
-  .takeUntil(onCompleteNotifier)
+    .startWith(itemSelector())
+    .delay(dueTime, scheduler)
+    .takeUntil(onCompleteNotifier)
 
   return Observable.merge(this, delayedHeartBeats)
 }

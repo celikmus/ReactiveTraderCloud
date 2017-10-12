@@ -1,7 +1,8 @@
 import { Observable } from 'rxjs/Rx'
+import LastValueObservableDictionary from '../system/service/lastValueObservableDictionary'
 
 export interface ReferenceDataService {
-  serviceStatusStream: Observable<any>
+  serviceStatusStream: Observable<Observable<LastValueObservableDictionary>>
   getCurrencyPair: Function
-  getCurrencyPairUpdatesStream: Observable<any>
+  getCurrencyPairUpdatesStream: Function
 }

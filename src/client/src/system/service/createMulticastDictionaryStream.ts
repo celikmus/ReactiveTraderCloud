@@ -1,10 +1,10 @@
 import { BehaviorSubject } from 'rxjs/BehaviorSubject'
 import LastValueObservableDictionary from './lastValueObservableDictionary'
-import { Observable, Scheduler } from 'rxjs'
+import { ConnectableObservable, Observable, Scheduler } from 'rxjs'
 import { HEARTBEAT_TIMEOUT } from '../../serviceConfigs'
 import { ConnectionStatus } from '../../types/connectionStatus'
 
-export default function createMulticastDictionaryStream(connection, serviceType) {
+export default function createMulticastDictionaryStream(connection, serviceType): ConnectableObservable<Observable<LastValueObservableDictionary>> {
 
   const connectionStatus = connection.connectionStatusStream
     .map(status => status === ConnectionStatus.connected)
