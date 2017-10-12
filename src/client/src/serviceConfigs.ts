@@ -1,0 +1,2 @@
+
+export const HEARTBEAT_TIMEOUT = 3000

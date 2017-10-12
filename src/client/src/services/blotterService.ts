@@ -1,34 +1,110 @@
 import { Observable, Scheduler } from 'rxjs/Rx'
 import { TradeMapper } from './mappers'
-import { streamify } from '../system/service'
 import { logger, RetryPolicy } from '../system'
 import '../system/observableExtensions/retryPolicyExt'
 import { ServiceConst } from '../types'
+import { ServiceStatus } from '../types/serviceStatus'
+import * as _ from 'lodash'
+import createMulticastDictionaryStream from '../system/service/createMulticastDictionaryStream'
 
 const log = logger.create('BlotterService')
 
-export default function blotterService(connection, referenceDataService) {
-  const service = {
-    connection,
-    serviceType: ServiceConst.BlotterServiceKey
-  }
-  const serviceClient = streamify(service)
-
+function createServiceStatus(cache, serviceType): ServiceStatus {
+  const instanceStatuses = _.values(cache.values).map(
+    (item: any) => item.latestValue
+  )
+  const isConnected = _(cache.values).some(
+    (item: any) => item.latestValue.isConnected
+  )
   return {
-    serviceStatusStream: serviceClient.serviceStatusStream,
+    isConnected,
+    instanceStatuses,
+    serviceType
+  }
+}
+
+export default function blotterService(connection, referenceDataService) {
+  const serviceType = ServiceConst.BlotterServiceKey
+  const multicastServiceInstanceDictionaryStream = createMulticastDictionaryStream(connection, serviceType)
+  return {
+    serviceStatusStream: multicastServiceInstanceDictionaryStream
+      .map(cache => createServiceStatus(cache, serviceType))
+      .share(),
     getTradesStream() {
-      return Observable.create(o => {
+      const streamOperation = Observable.create(o => {
         log.debug('Subscribing to trade stream')
-        return serviceClient
-          .createStreamOperation('getTradesStream', {})
-          .retryWithPolicy(
-            RetryPolicy.backoffTo10SecondsMax,
-            'getTradesStream',
-            Scheduler.async
+        multicastServiceInstanceDictionaryStream.connect()
+        const topicName = `topic_${serviceType}_${((Math.random() *
+          Math.pow(36, 8)) <<
+          0).toString(36)}`
+        const operationName = 'getTradesStream'
+
+        multicastServiceInstanceDictionaryStream
+          .getServiceWithMinLoad()
+          .subscribe(
+            serviceInstanceStatus => {
+              if (!serviceInstanceStatus.isConnected) {
+                o.error(
+                  new Error(
+                    'Service instance is disconnected for stream operation'
+                  )
+                )
+              } else {
+                log.debug(
+                  `Will use service instance [${serviceInstanceStatus.serviceId}] for stream operation [${operationName}]. IsConnected: [${serviceInstanceStatus.isConnected}]`
+                )
+                connection.subscribeToTopic(topicName).subscribe(
+                  i => o.next(i),
+                  err => {
+                    o.error(err)
+                  },
+                  () => {
+                    o.complete()
+                  }
+                )
+              }
+            },
+            err => o.error(err),
+            () => o.complete()
           )
-          .map(dto => TradeMapper.mapTradesUpdate(referenceDataService, dto))
-          .subscribe(o)
+
+        multicastServiceInstanceDictionaryStream.getServiceWithMinLoad().subscribe(
+          serviceInstanceStatus => {
+            if (!serviceInstanceStatus.isConnected) {
+              o.error(
+                new Error(
+                  'Service instance is disconnected for stream operation'
+                )
+              )
+            } else {
+              const remoteProcedure = serviceInstanceStatus.serviceId + '.' + operationName
+              connection
+                .requestResponse(remoteProcedure, {}, topicName)
+                .subscribe(
+                  () => {
+                    log.debug(
+                      `Ack received for RPC hookup as part of stream operation [${operationName}]`
+                    )
+                  },
+                  err => o.error(err),
+                  () => {
+                  } // noop, nothing to do here, we don't complete the outer observer on ack,
+                )
+            }
+          },
+          err => o.error(err),
+          () => o.complete()
+        )
       })
+
+      return streamOperation
+        .retryWithPolicy(
+          RetryPolicy.backoffTo10SecondsMax,
+          'getTradesStream',
+          Scheduler.async
+        )
+        .map(dto => TradeMapper.mapTradesUpdate(referenceDataService, dto))
+
     }
   }
 }
