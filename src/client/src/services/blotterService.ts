@@ -39,77 +39,28 @@ export default function blotterService(connection: Connection, referenceDataServ
   return {
     serviceStatusStream,
     getTradesStream(): TradesUpdate[] {
-      const streamOperation = Observable.create(o => {
-        log.debug('Subscribing to trade stream')
-        multicastServiceInstanceDictionaryStream.connect()
-        const topicName = `topic_${serviceType}_${((Math.random() *
-          Math.pow(36, 8)) <<
-          0).toString(36)}`
-        const operationName = 'getTradesStream';
+      log.debug('Subscribing to trade stream')
+      multicastServiceInstanceDictionaryStream.connect()
+      const topicName = `topic_${serviceType}_${((Math.random() *
+        Math.pow(36, 8)) <<
+        0).toString(36)}`
+      const operationName = 'getTradesStream'
 
-        (multicastServiceInstanceDictionaryStream as any) // thanks TS, but you shouldn't fail this line
-          .getServiceWithMinLoad()
-          .subscribe(
-            serviceInstanceStatus => {
-              if (!serviceInstanceStatus.isConnected) {
-                o.error(
-                  new Error(
-                    'Service instance is disconnected for stream operation'
-                  )
-                )
-              } else {
-                log.debug(
-                  `Will use service instance [${serviceInstanceStatus.serviceId}] for stream operation [${operationName}]. IsConnected: [${serviceInstanceStatus.isConnected}]`
-                )
-                connection
-                  .subscribeToTopic(topicName)
-                  .subscribe(
-                    i => o.next(i),
-                    err => {
-                      o.error(err)
-                    },
-                    () => {
-                      o.complete()
-                    }
-                  )
-              }
-            },
-            err => o.error(err),
-            () => o.complete()
-          );
-
-        (multicastServiceInstanceDictionaryStream as any) // thanks TS, but you shouldn't fail this line
-          .getServiceWithMinLoad()
-          .subscribe(
-            serviceInstanceStatus => {
-              if (!serviceInstanceStatus.isConnected) {
-                o.error(
-                  new Error(
-                    'Service instance is disconnected for stream operation'
-                  )
-                )
-              } else {
-                const remoteProcedure = serviceInstanceStatus.serviceId + '.' + operationName
-                connection
-                  .requestResponse(remoteProcedure, {}, topicName)
-                  .subscribe(
-                    () => {
-                      log.debug(
-                        `Ack received for RPC hookup as part of stream operation [${operationName}]`
-                      )
-                    },
-                    err => o.error(err),
-                    () => {
-                    } // noop, nothing to do here, we don't complete the outer observer on ack,
-                  )
-              }
-            },
-            err => o.error(err),
-            () => o.complete()
+      return (multicastServiceInstanceDictionaryStream as any)
+        .getServiceWithMinLoad()
+        .mergeMap(serviceInstanceStatus => {
+          if (!serviceInstanceStatus.isConnected) {
+            throw new Error('Service instance is disconnected for stream operation')
+          }
+          log.debug(`Will use service instance [${serviceInstanceStatus.serviceId}] for stream operation [${operationName}]. IsConnected: [${serviceInstanceStatus.isConnected}]`)
+          const remoteProcedure = `${serviceInstanceStatus.serviceId}.${operationName}`
+          return Observable.merge(
+            connection.subscribeToTopic(topicName),
+            connection.requestResponse(remoteProcedure, {}, topicName).do(() => log.debug(
+              `Ack received for RPC hookup as part of stream operation [${operationName}]`
+            )).ignoreElements()
           )
-      })
-
-      return streamOperation
+        })
         .retryWithPolicy(
           RetryPolicy.backoffTo10SecondsMax,
           'getTradesStream',
