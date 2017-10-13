@@ -10,10 +10,12 @@ import { Connection } from '../system/service/connection'
 import { ReferenceDataService } from '../types/referenceDataService'
 import { BlotterService } from '../types/blotterService'
 import { TradesUpdate } from '../types/tradesUpdate'
+import LastValueObservableDictionary from '../system/service/lastValueObservableDictionary'
+import { Service } from '../types/service'
 
 const log = logger.create('BlotterService')
 
-function createServiceStatus(cache, serviceType): ServiceStatus {
+function createServiceStatus(cache: LastValueObservableDictionary, serviceType: string): ServiceStatus {
   const instanceStatuses = _.values(cache.values).map(
     (item: any) => item.latestValue
   )
@@ -29,10 +31,11 @@ function createServiceStatus(cache, serviceType): ServiceStatus {
 
 export default function blotterService(connection: Connection, referenceDataService: ReferenceDataService): BlotterService {
   const serviceType = ServiceConst.BlotterServiceKey
-  const multicastServiceInstanceDictionaryStream: ConnectableObservable<Observable<any>> = createMulticastDictionaryStream(connection, serviceType)
+  const service: Service = { connection, serviceType }
+  const multicastServiceInstanceDictionaryStream: ConnectableObservable<LastValueObservableDictionary> = createMulticastDictionaryStream(service)
   const serviceStatusStream: Observable<ServiceStatus> = multicastServiceInstanceDictionaryStream
-      .map(cache => createServiceStatus(cache, serviceType))
-      .share()
+    .map(cache => createServiceStatus(cache, serviceType))
+    .share()
   return {
     serviceStatusStream,
     getTradesStream(): TradesUpdate[] {

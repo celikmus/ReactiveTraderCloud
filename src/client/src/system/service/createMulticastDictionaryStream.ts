@@ -3,9 +3,10 @@ import LastValueObservableDictionary from './lastValueObservableDictionary'
 import { ConnectableObservable, Observable, Scheduler } from 'rxjs'
 import { HEARTBEAT_TIMEOUT } from '../../serviceConfigs'
 import { ConnectionStatus } from '../../types/connectionStatus'
+import { Service } from '../../types/service'
 
-export default function createMulticastDictionaryStream(connection, serviceType): ConnectableObservable<Observable<LastValueObservableDictionary>> {
-
+export default function createMulticastDictionaryStream(service: Service): ConnectableObservable<LastValueObservableDictionary> {
+  const { connection, serviceType } = service
   const connectionStatus = connection.connectionStatusStream
     .map(status => status === ConnectionStatus.connected)
     .share()
@@ -15,7 +16,7 @@ export default function createMulticastDictionaryStream(connection, serviceType)
     .take(1)
     .flatMap(() => Observable.throw('Underlying connection disconnected'))
 
-  const serviceInstanceDictionaryObservable = connection
+  const groupedServiceObservable = connection
     .subscribeToTopic('status')
     .filter(s => s.Type === serviceType)
     .map(status => ({
@@ -30,7 +31,8 @@ export default function createMulticastDictionaryStream(connection, serviceType)
     .merge(errorOnDisconnectStream)
     // .filter(item => item) // if item is false don't continue
     .groupBy(serviceStatus => serviceStatus.serviceId)
-    // add service instance level heartbeat timeouts, i.e. each service instance can disconnect independently
+  // add service instance level heartbeat timeouts, i.e. each service instance can disconnect independently
+  const serviceInstanceDictionaryObservable = (groupedServiceObservable as any)
     .debounceOnMissedHeartbeat(
       HEARTBEAT_TIMEOUT,
       serviceId => ({
@@ -64,6 +66,6 @@ export default function createMulticastDictionaryStream(connection, serviceType)
     .repeat()
     .multicast(
       new BehaviorSubject(new LastValueObservableDictionary())
-    )
+    ) as ConnectableObservable<LastValueObservableDictionary>
 }
 

@@ -132,8 +132,8 @@ describe('DistinctUntilChangedGroup', () => {
   test('should apply distincUntilChanged semantics to an observable of observables', () => {
 
     const comparisonFunction = (item1, item2) => item1 === item2
-    const observableWithDuplicatedConsegutiveValues = cold('1122211')
-    const source = cold('---a---a---', { a: observableWithDuplicatedConsegutiveValues })
+    const observableWithDuplicatedConsecutiveValues = cold('1122211')
+    const source = cold('---a---a---', { a: observableWithDuplicatedConsecutiveValues })
     const expected = '---b---b---'
     const expectedInnerObservable = cold('1-2--1-')
     const testing = source.refactoredDistinctUntilChangedGroup(comparisonFunction)

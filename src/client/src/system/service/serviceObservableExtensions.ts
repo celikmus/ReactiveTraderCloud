@@ -30,7 +30,8 @@ function debounceOnMissedHeartbeat<TValue>(this: Observable<TValue>, dueTime, on
 
 Observable.prototype['debounceOnMissedHeartbeat'] = debounceOnMissedHeartbeat
 
-function refactoredDebounceOnMissedHeartbeat<K, TValue extends GroupedObservable<K, TValue>>(this: GroupedObservable<K, TValue>,
+function refactoredDebounceOnMissedHeartbeat<K, TValue extends GroupedObservable<K, TValue>>(
+  this: GroupedObservable<K, TValue>,
   dueTime,
   onDebounceItemFactory,
   scheduler) {
